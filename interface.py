@@ -12,6 +12,7 @@ from pprint import pformat
 
 BaseUrl = "https://www.trustpilot.com/evaluate-bgl/"
 
+# todo add language support in a dropdown
 
 class App(customtkinter.CTk):
     def __init__(self):
@@ -97,9 +98,9 @@ class App(customtkinter.CTk):
         self.decrypted_payload.grid(row=8, column=1, padx=20, pady=5, sticky="ewn")
 
         # test creadentials
-        self.encryptionkey_Entry.insert(0, os.getenv("encryptionkey"))
-        self.authenticationKey_Entry.insert(0, os.getenv("authenticationkey"))
-        self.domain_Entry.insert(0, os.getenv("domain"))
+        # self.encryptionkey_Entry.insert(0, os.getenv("encryptionkey"))
+        # self.authenticationKey_Entry.insert(0, os.getenv("authenticationkey"))
+        # self.domain_Entry.insert(0, os.getenv("domain"))
 
     def clear_btn_clicked(self):
         self.payload_to_decrypt_entry.delete(0,"end")
