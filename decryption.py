@@ -1,11 +1,8 @@
-import binascii
 import hmac
 import hashlib
-import base64
-import string
 from Crypto.Cipher import AES
 from Crypto.Util import Padding
-import urllib.parse
+from utils import decode_base64, url_decode
 
 BLOCK_SIZE = 16
 
@@ -29,156 +26,67 @@ class JSONFormatError(DecryptionError):
     """Raised when the decrypted message is not valid JSON."""
     pass
 
-
-def decrypt(encrypted_msg, encrypt_keyb64, hash_keyb64):
+def decrypt(encrypted_msg_b64: str, encrypt_key_b64: str, hash_key_b64: str) -> bytes:
     """Decrypts and verifies the integrity of a message.
 
     Args:
-        encrypted_msg: Base64 encoded, URL encoded message
-        encrypt_key: Base64 encoded encryption key
-        hash_key: Base64 encoded hash key
+        encrypted_msg_b64: Base64 encoded, URL encoded message
+        encrypt_key_b64: Base64 encoded encryption key
+        hash_key_b64: Base64 encoded hash key
 
     Returns:
         Decrypted message bytes.
 
     Raises:
-        EncodingError: If the input is not URL encoded.
+        EncodingError: If the input is not properly encoded.
         IntegrityError: If message integrity verification fails.
         PaddingError: If the padding is invalid.
     """
 
     # --- 1. Decode Keys ---
-
     try:
-        encrypt_key = base64.b64decode(encrypt_keyb64)
-        hash_key = base64.b64decode(hash_keyb64)
-    except (binascii.Error, ValueError) as e:
-        raise EncodingError(f"Invalid base64 encoding for keys: {e}")
+        encrypt_key = decode_base64(encrypt_key_b64)
+        hash_key = decode_base64(hash_key_b64)
+    except ValueError as e:
+        raise EncodingError(f"Invalid Base64 encoding for keys: {e}")
     
-    # --- 2. Validate URL Encoding of the Message ---
-    if not is_url_encoded(encrypted_msg):
-        raise EncodingError("Message is not URL encoded.")
-
+    # --- 2. Decode Message ---
     try:
-        urldecoded_msg = urllib.parse.unquote(encrypted_msg)
-        encrypted_msg = base64.b64decode(urldecoded_msg)
-    except (binascii.Error, ValueError) as e:
-        raise EncodingError(f"Invalid base64 encoding for message: {e}")
+        # url_decode handles both + and %20 style encoding
+        url_decoded_msg = url_decode(encrypted_msg_b64)
+        encrypted_msg_bytes = decode_base64(url_decoded_msg)
+    except Exception as e:
+        raise EncodingError(f"Invalid encoding for message: {e}")
 
-    iv = encrypted_msg[:BLOCK_SIZE]
-    encrypted_data = encrypted_msg[BLOCK_SIZE:-32] 
-    msg_hash = encrypted_msg[-32:]
+    if len(encrypted_msg_bytes) < BLOCK_SIZE + 32:
+        raise IntegrityError("Message is too short to be valid.")
 
-    # Verify message integrity
-    expected_hash = hmac.new(hash_key, iv + encrypted_data, digestmod=hashlib.sha256).digest()
+    iv = encrypted_msg_bytes[:BLOCK_SIZE]
+    encrypted_data = encrypted_msg_bytes[BLOCK_SIZE:-32] 
+    msg_hash = encrypted_msg_bytes[-32:]
+
+    # --- 3. Verify Message Integrity ---
+    # HMAC is calculated over IV + encrypted message
+    hmac_data = iv + encrypted_data
+    expected_hash = hmac.new(hash_key, hmac_data, digestmod=hashlib.sha256).digest()
+    
     if not hmac.compare_digest(msg_hash, expected_hash):
-        raise IntegrityError("Message integrity verification failed.\nDouble-check that the sender are using the exact same authentication key/hash key.")
+        raise IntegrityError(
+            "Message integrity verification failed. "
+            "Ensure the authentication keys match."
+        )
     
-   
-    # Decrypt the message
+    # --- 4. Decrypt the Message ---
     try:
         cipher = AES.new(encrypt_key, AES.MODE_CBC, iv)
         decrypted_padded_msg = cipher.decrypt(encrypted_data)
         decrypted_msg = Padding.unpad(decrypted_padded_msg, BLOCK_SIZE, style="pkcs7")
     except ValueError as e:
-        raise PaddingError(f"Invalid padding: {e} Double-Check Encryption: Make sure the original encryption process is using PKCS#7 padding correctly.Verify Data Integrity: Ensure the encrypted message hasn't been tampered with during transmission or storage. You can use checksums or message authentication codes (MACs) for this. Confirm Keys: Absolutely make sure you are using the correct decryption key.") from e
-
-    return decrypted_msg 
-
-def is_url_encoded(encrypted_msg):
-    """
-    Attempts to decode a string and checks for errors.
-
-    Args:
-        encrypted_msg: The string to check.
-
-    Returns:
-        True if successfully decoded (likely URL encoded), False otherwise.
-    """
-
-    decoded = urllib.parse.unquote(encrypted_msg)
-    return decoded != encrypted_msg  # True if encoded, False if not
-    
-
-   
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        raise PaddingError(
+            f"Decryption failed (padding error): {e}. "
+            "This can happen if the encryption key is incorrect or the data is corrupted."
+        ) from e
+    except Exception as e:
+        raise DecryptionError(f"Unexpected error during decryption: {e}")
+
+    return decrypted_msg
