@@ -64,6 +64,23 @@ graph TD
 
 ---
 
+## 📦 Automated Releases
+
+This project is configured with GitHub Actions to automatically build and release the application for **Windows** and **macOS**.
+
+To create a new release:
+1. **Tag your commit**:
+   ```bash
+   git tag v1.0.0
+   ```
+2. **Push the tag**:
+   ```bash
+   git push origin v1.0.0
+   ```
+GitHub Actions will then build the binaries and attach them to a new GitHub Release.
+
+---
+
 ## 🔧 Troubleshooting
 
 - **Invalid Base64**: Ensure your keys are exactly as they appear in the Trustpilot dashboard.
