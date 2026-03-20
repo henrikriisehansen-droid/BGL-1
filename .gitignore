@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.python-version
+uv.lock
+.venv/
+.gemini/
+.DS_Store
