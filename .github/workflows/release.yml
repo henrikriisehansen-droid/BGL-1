@@ -25,7 +25,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12' # Using stable 3.12 for maximum compatibility in CI
+          python-version: '3.12'
           
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
@@ -41,19 +41,19 @@ jobs:
           channel: 'stable'
           
       - name: Build with Flet
-        run: uv run flet build ${{ matrix.platform }} --yes --no-rich-output
+        run: uv run flet build ${{ matrix.platform }} --yes --no-rich-output --output dist
         
       - name: Package macOS (Zip)
         if: matrix.platform == 'macos'
         run: |
-          cd build/macos
-          zip -r ../../BGL-macos.zip .
+          cd dist
+          zip -ry ../BGL-macos.zip .
           
       - name: Package Windows (Zip)
         if: matrix.platform == 'windows'
         shell: pwsh
         run: |
-          Compress-Archive -Path build/windows/* -DestinationPath BGL-windows.zip
+          Compress-Archive -Path dist/* -DestinationPath BGL-windows.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -71,9 +71,6 @@ jobs:
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
-        
-      - name: Display structure of downloaded files
-        run: ls -R
         
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v2
