@@ -25,9 +25,11 @@ jobs:
         with:
           python-version: '3.12' # Using stable 3.12 for maximum compatibility in CI
           
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
-        
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
       - name: Install dependencies
         run: uv sync
         
