@@ -41,7 +41,7 @@ jobs:
           channel: 'stable'
           
       - name: Build with Flet
-        run: uv run flet build ${{ matrix.platform }} --no-rich-output
+        run: uv run flet build ${{ matrix.platform }} --yes --no-rich-output
         
       - name: Upload artifact
         uses: actions/upload-artifact@v4
