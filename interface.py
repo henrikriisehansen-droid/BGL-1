@@ -18,7 +18,7 @@ def main(page: ft.Page):
     page.title = "Business Generated Link (BGL)"
     page.window_width = 1000
     page.window_height = 800
-    page.window_icon = "bgl_icon.svg" # Set application icon
+    page.window_icon = "bgl_icon.png" # Set application icon
     
     # Darker Theme Section
     page.theme_mode = ft.ThemeMode.DARK
@@ -182,4 +182,4 @@ def main(page: ft.Page):
     )
 
 if __name__ == "__main__":
-    ft.run(main)
+    ft.run(main, assets_dir=".")
