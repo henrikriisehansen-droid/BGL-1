@@ -1,0 +1,1 @@
+([('main', '/Users/hrh/Documents/programs/BGL/dist/main', 'EXECUTABLE')],)
